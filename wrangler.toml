@@ -15,7 +15,7 @@ enabled = true
 [[d1_databases]]
 binding = "UPTIMEFLARE_D1"
 database_name = "uptime_flare"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "2ecf1dc5-38f4-4f9b-995c-c8e7860f2a21"
 
 [[durable_objects.bindings]]
 name = "REMOTE_CHECKER_DO"
