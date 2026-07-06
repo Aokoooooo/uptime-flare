@@ -1,0 +1,26 @@
+name = "uptime-flare"
+compatibility_date = "2026-07-01"
+compatibility_flags = [ "nodejs_compat" ]
+main = "src/worker.ts"
+
+[assets]
+directory = ".output/public"
+
+[triggers]
+crons = ["* * * * *"]
+
+[observability]
+enabled = true
+
+[[d1_databases]]
+binding = "UPTIMEFLARE_D1"
+database_name = "uptime_flare"
+database_id = "00000000-0000-0000-0000-000000000000"
+
+[[durable_objects.bindings]]
+name = "REMOTE_CHECKER_DO"
+class_name = "RemoteChecker"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RemoteChecker"]

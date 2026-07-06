@@ -1,0 +1,46 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+**/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+/test
+/tests
+
+# production
+/build
+/dist
+/out
+
+# misc
+.DS_Store
+*.pem
+.tanstack/
+.vscode/
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env files
+.env*.local
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+
+# typescript
+*.tsbuildinfo
+
+.terraform/
+terraform.tfstate*
+
+/.wrangler
+/.wrangler-local
+
+.superpowers
+docs/superpowers/

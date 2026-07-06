@@ -1,0 +1,5 @@
+BASIC_AUTH_USERNAME="admin"
+BASIC_AUTH_PASSWORD="change-me"
+
+# Optional: Feishu custom robot webhook for local notification testing.
+# FEISHU_WEBHOOK_URL="https://open.feishu.cn/open-apis/bot/v2/hook/..."
