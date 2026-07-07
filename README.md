@@ -62,10 +62,15 @@ cp .dev.vars.example .dev.vars
 bun run dev
 ```
 
-本地触发 Worker 定时任务：
+本地触发一次 Worker 定时任务：
+
+- 打开 `/admin/monitors`
+- 点击“触发检查”
+
+也可以直接调用受 admin 鉴权保护的 API：
 
 ```bash
-curl "http://127.0.0.1:3000/__scheduled"
+curl -X POST "http://127.0.0.1:3000/api/admin/scheduled"
 ```
 
 ## 配置监控项

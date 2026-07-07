@@ -45,6 +45,7 @@ export function LatencyChart({ points }: { points: LatencyRecord[] }) {
         {
           stroke: '#8b9bb7',
           grid: { stroke: '#223047', width: 1 },
+          size: 64,
           values: (_u, vals) => vals.map((v) => `${v}ms`),
         },
       ],

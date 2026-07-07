@@ -103,14 +103,18 @@ export function MonitorDetail({
             onClick={(event) => event.stopPropagation()}
           >
             <h2 className="modal-title">{modal.title}</h2>
-            {modal.reasons.map((reason) => (
-              <div className="incident-reason" key={reason}>
-                {reason}
-              </div>
-            ))}
-            <button className="button" type="button" onClick={() => setModal(null)}>
-              关闭
-            </button>
+            <div className="modal-body">
+              {modal.reasons.map((reason) => (
+                <div className="incident-reason" key={reason}>
+                  {reason}
+                </div>
+              ))}
+            </div>
+            <div className="modal-actions">
+              <button className="button" type="button" onClick={() => setModal(null)}>
+                关闭
+              </button>
+            </div>
           </div>
         </div>
       )}

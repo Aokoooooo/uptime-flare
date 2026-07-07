@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiDataRouteImport } from './routes/api.data'
 import { Route as ApiBadgeRouteImport } from './routes/api.badge'
 import { Route as AdminMonitorsRouteImport } from './routes/admin.monitors'
+import { Route as ApiAdminScheduledRouteImport } from './routes/api.admin.scheduled'
 import { Route as ApiAdminMonitorsRouteImport } from './routes/api.admin.monitors'
 import { Route as ApiAdminMonitorsReorderRouteImport } from './routes/api.admin.monitors.reorder'
 import { Route as ApiAdminMonitorsImportRouteImport } from './routes/api.admin.monitors.import'
@@ -50,6 +51,11 @@ const AdminMonitorsRoute = AdminMonitorsRouteImport.update({
   path: '/monitors',
   getParentRoute: () => AdminRoute,
 } as any)
+const ApiAdminScheduledRoute = ApiAdminScheduledRouteImport.update({
+  id: '/api/admin/scheduled',
+  path: '/api/admin/scheduled',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAdminMonitorsRoute = ApiAdminMonitorsRouteImport.update({
   id: '/api/admin/monitors',
   path: '/api/admin/monitors',
@@ -79,6 +85,7 @@ export interface FileRoutesByFullPath {
   '/api/badge': typeof ApiBadgeRoute
   '/api/data': typeof ApiDataRoute
   '/api/admin/monitors': typeof ApiAdminMonitorsRouteWithChildren
+  '/api/admin/scheduled': typeof ApiAdminScheduledRoute
   '/api/admin/monitors/$id': typeof ApiAdminMonitorsIdRoute
   '/api/admin/monitors/import': typeof ApiAdminMonitorsImportRoute
   '/api/admin/monitors/reorder': typeof ApiAdminMonitorsReorderRoute
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/api/badge': typeof ApiBadgeRoute
   '/api/data': typeof ApiDataRoute
   '/api/admin/monitors': typeof ApiAdminMonitorsRouteWithChildren
+  '/api/admin/scheduled': typeof ApiAdminScheduledRoute
   '/api/admin/monitors/$id': typeof ApiAdminMonitorsIdRoute
   '/api/admin/monitors/import': typeof ApiAdminMonitorsImportRoute
   '/api/admin/monitors/reorder': typeof ApiAdminMonitorsReorderRoute
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/api/badge': typeof ApiBadgeRoute
   '/api/data': typeof ApiDataRoute
   '/api/admin/monitors': typeof ApiAdminMonitorsRouteWithChildren
+  '/api/admin/scheduled': typeof ApiAdminScheduledRoute
   '/api/admin/monitors/$id': typeof ApiAdminMonitorsIdRoute
   '/api/admin/monitors/import': typeof ApiAdminMonitorsImportRoute
   '/api/admin/monitors/reorder': typeof ApiAdminMonitorsReorderRoute
@@ -118,6 +127,7 @@ export interface FileRouteTypes {
     | '/api/badge'
     | '/api/data'
     | '/api/admin/monitors'
+    | '/api/admin/scheduled'
     | '/api/admin/monitors/$id'
     | '/api/admin/monitors/import'
     | '/api/admin/monitors/reorder'
@@ -130,6 +140,7 @@ export interface FileRouteTypes {
     | '/api/badge'
     | '/api/data'
     | '/api/admin/monitors'
+    | '/api/admin/scheduled'
     | '/api/admin/monitors/$id'
     | '/api/admin/monitors/import'
     | '/api/admin/monitors/reorder'
@@ -142,6 +153,7 @@ export interface FileRouteTypes {
     | '/api/badge'
     | '/api/data'
     | '/api/admin/monitors'
+    | '/api/admin/scheduled'
     | '/api/admin/monitors/$id'
     | '/api/admin/monitors/import'
     | '/api/admin/monitors/reorder'
@@ -154,6 +166,7 @@ export interface RootRouteChildren {
   ApiBadgeRoute: typeof ApiBadgeRoute
   ApiDataRoute: typeof ApiDataRoute
   ApiAdminMonitorsRoute: typeof ApiAdminMonitorsRouteWithChildren
+  ApiAdminScheduledRoute: typeof ApiAdminScheduledRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -199,6 +212,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/monitors'
       preLoaderRoute: typeof AdminMonitorsRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/api/admin/scheduled': {
+      id: '/api/admin/scheduled'
+      path: '/api/admin/scheduled'
+      fullPath: '/api/admin/scheduled'
+      preLoaderRoute: typeof ApiAdminScheduledRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/admin/monitors': {
       id: '/api/admin/monitors'
@@ -263,6 +283,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiBadgeRoute: ApiBadgeRoute,
   ApiDataRoute: ApiDataRoute,
   ApiAdminMonitorsRoute: ApiAdminMonitorsRouteWithChildren,
+  ApiAdminScheduledRoute: ApiAdminScheduledRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

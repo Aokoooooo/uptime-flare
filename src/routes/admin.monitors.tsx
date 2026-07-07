@@ -29,6 +29,7 @@ function AdminMonitorsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionError, setActionError] = useState('')
+  const [actionMessage, setActionMessage] = useState('')
   const [pendingAction, setPendingAction] = useState('')
   const [newDraftVersion, setNewDraftVersion] = useState(0)
 
@@ -108,8 +109,16 @@ function AdminMonitorsPage() {
     })
   }
 
+  const triggerScheduledCheck = async () => {
+    await runAction('scheduled', async () => {
+      await apiRequest('/api/admin/scheduled', { method: 'POST' })
+      setActionMessage('已触发一次监控检查')
+    })
+  }
+
   const runAction = async (name: string, action: () => Promise<void>) => {
     setActionError('')
+    setActionMessage('')
     setPendingAction(name)
     try {
       await action()
@@ -132,6 +141,14 @@ function AdminMonitorsPage() {
             <p className="status-subtitle">管理 D1 中的监控配置，保存后下次定时检查自动生效。</p>
           </div>
           <div className="page-actions">
+            <button
+              className="button primary"
+              type="button"
+              onClick={triggerScheduledCheck}
+              disabled={busy}
+            >
+              {pendingAction === 'scheduled' ? '触发中...' : '触发检查'}
+            </button>
             <button className="button" type="button" onClick={importJson} disabled={busy}>
               {pendingAction === 'import' ? '导入中...' : '导入 JSON'}
             </button>
@@ -142,6 +159,7 @@ function AdminMonitorsPage() {
         </div>
         {error ? <p className="form-error">{error}</p> : null}
         {actionError ? <p className="form-error">{actionError}</p> : null}
+        {actionMessage ? <p className="form-success">{actionMessage}</p> : null}
         <div className="admin-grid" aria-busy={loading}>
           <AdminMonitorList
             monitors={monitors}

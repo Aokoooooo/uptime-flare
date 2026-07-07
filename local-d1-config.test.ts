@@ -97,14 +97,16 @@ describe('local D1 configuration', () => {
     )
   })
 
-  test('local scheduled trigger docs use the Vite dev server port', () => {
+  test('local scheduled trigger docs use the protected admin trigger', () => {
     const readme = read('README.md')
     const deploymentDoc = read('docs/deployment.md')
     const viteConfig = read('vite.config.ts')
 
     expect(viteConfig).toContain('port: 3000')
-    expect(readme).toContain('http://127.0.0.1:3000/__scheduled')
-    expect(deploymentDoc).toContain('http://127.0.0.1:3000/__scheduled')
+    expect(readme).toContain('/admin/monitors')
+    expect(readme).toContain('/api/admin/scheduled')
+    expect(deploymentDoc).toContain('/admin/monitors')
+    expect(deploymentDoc).toContain('/api/admin/scheduled')
   })
 
   test('route tests are ignored by the file route generator', () => {
@@ -206,6 +208,18 @@ describe('local D1 configuration', () => {
     expect(adminPage).toContain("apiRequest('/api/admin/monitors/import'")
     expect(adminPage).not.toContain('for (const monitor of parsed.monitors)')
     expect(importRoute).toContain('importMonitors')
+  })
+
+  test('admin page can trigger one scheduled check through a protected API', () => {
+    const adminPage = read('src/routes/admin.monitors.tsx')
+    const scheduledRoute = read('src/routes/api.admin.scheduled.ts')
+    const routeTree = read('src/routeTree.gen.ts')
+
+    expect(adminPage).toContain("apiRequest('/api/admin/scheduled'")
+    expect(adminPage).toContain('触发检查')
+    expect(scheduledRoute).toContain('monitorWorker.scheduled')
+    expect(scheduledRoute).toContain('scheduledTime: Date.now()')
+    expect(routeTree).toContain('/api/admin/scheduled')
   })
 
   test('admin monitor deletion clears stored incident and latency state', () => {

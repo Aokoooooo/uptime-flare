@@ -356,7 +356,7 @@ a:focus-visible {
   height: auto;
   width: 100%;
   margin-top: 12px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .chart .u-wrap {
@@ -663,6 +663,15 @@ a:focus-visible {
 .modal-title {
   margin: 0 0 14px;
   font-size: 18px;
+}
+
+.modal-body {
+  margin-bottom: 16px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-start;
 }
 
 @media (max-width: 640px) {
@@ -1006,8 +1015,18 @@ a:focus-visible {
 .admin-form > label,
 .advanced-fields,
 .form-actions,
-.form-error {
+.form-error,
+.form-success {
   margin-inline: 14px;
+}
+
+.admin-page > .form-error,
+.admin-page > .form-success {
+  margin-inline: 0;
+}
+
+.form-success {
+  color: var(--green);
 }
 
 .toggle-line {
