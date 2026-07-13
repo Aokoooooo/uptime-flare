@@ -1,6 +1,6 @@
-import type { Env } from '.'
 import type { MonitorTarget } from '../../types/config'
-import { withTimeout, fetchTimeout } from './util'
+import type { Env } from '.'
+import { fetchTimeout, withTimeout } from './util'
 
 function isIpAddress(hostname: string): boolean {
   // `URL.hostname` strips brackets for IPv6, so a `:` reliably indicates an IPv6 literal here.
@@ -281,9 +281,58 @@ export async function getStatusWithGlobalPing(
   }
 }
 
+type TcpSocket = {
+  opened: Promise<unknown>
+  close(): Promise<void>
+}
+
+type TcpConnector = (address: { hostname: string; port: number }) => TcpSocket
+
+export async function getTcpStatus(
+  monitor: MonitorTarget,
+  connector?: TcpConnector
+): Promise<{ ping: number; up: boolean; err: string }> {
+  const status = { ping: 0, up: false, err: 'Unknown' }
+  const startTime = Date.now()
+  let socket: TcpSocket | undefined
+
+  try {
+    const connectSocket =
+      connector ??
+      ((await import(/* webpackIgnore: true */ 'cloudflare:sockets')).connect as TcpConnector)
+    const parsed = new URL(`https://${monitor.target}`)
+    socket = connectSocket({ hostname: parsed.hostname, port: Number(parsed.port) })
+
+    await withTimeout(monitor.timeout || 10000, socket.opened)
+
+    console.log(`${monitor.name} connected to ${monitor.target}`)
+    status.ping = Date.now() - startTime
+    status.up = true
+    status.err = ''
+  } catch (thrown) {
+    const error = thrown instanceof Error ? thrown : new Error(String(thrown))
+    console.log(`${monitor.name} errored with ${error.name}: ${error.message}`)
+    if (error.message.includes('timed out')) {
+      status.ping = monitor.timeout || 10000
+    }
+    status.up = false
+    status.err = `${error.name}: ${error.message}`
+  } finally {
+    try {
+      await socket?.close()
+    } catch (error) {
+      console.log(`${monitor.name} failed to close TCP socket`, error)
+    }
+  }
+
+  return status
+}
+
 export async function getStatus(
   monitor: MonitorTarget
 ): Promise<{ ping: number; up: boolean; err: string }> {
+  if (monitor.method === 'TCP_PING') return getTcpStatus(monitor)
+
   const status = {
     ping: 0,
     up: false,
@@ -292,75 +341,46 @@ export async function getStatus(
 
   const startTime = Date.now()
 
-  if (monitor.method === 'TCP_PING') {
-    // TCP port endpoint monitor
+  // HTTP endpoint monitor
+  try {
+    const headers = new Headers(monitor.headers as any)
+    if (!headers.has('user-agent')) {
+      headers.set('user-agent', 'UptimeFlare/1.0 (+https://github.com/lyc8503/UptimeFlare)')
+    }
+
+    const response = await fetchTimeout(monitor.target, monitor.timeout || 10000, {
+      method: monitor.method,
+      headers: headers,
+      body: monitor.body,
+      cf: {
+        cacheTtlByStatus: {
+          '100-599': -1, // Don't cache any status code, from https://developers.cloudflare.com/workers/runtime-apis/request/#requestinitcfproperties
+        },
+      },
+    })
+
+    console.log(`${monitor.name} responded with ${response.status}`)
+    status.ping = Date.now() - startTime
+
+    const err = await checkHttpResponse(monitor, response.status, response.text.bind(response))
     try {
-      const connect = await import(/* webpackIgnore: true */ 'cloudflare:sockets').then(
-        (sockets) => sockets.connect
-      )
-      // This is not a real https connection, but we need to add a dummy `https://` to parse the hostname & port
-      const parsed = new URL(`https://${monitor.target}`)
-      const socket = connect({ hostname: parsed.hostname, port: Number(parsed.port) })
+      await response.body?.cancel()
+    } catch (_e) {} // Always try to cancel body, see issue #166
 
-      // Now we have an `opened` promise!
-      await withTimeout(monitor.timeout || 10000, socket.opened)
-      await socket.close()
-
-      console.log(`${monitor.name} connected to ${monitor.target}`)
-
-      status.ping = Date.now() - startTime
-      status.up = true
-      status.err = ''
-    } catch (e: any) {
-      console.log(`${monitor.name} errored with ${e.name}: ${e.message}`)
-      if (e.message.includes('timed out')) {
-        status.ping = monitor.timeout || 10000
-      }
+    if (err !== null) {
+      console.log(`${monitor.name} didn't pass response check: ${err}`)
+    }
+    status.up = err === null
+    status.err = err ?? ''
+  } catch (e: any) {
+    console.log(`${monitor.name} errored with ${e.name}: ${e.message}`)
+    if (e.name === 'AbortError') {
+      status.ping = monitor.timeout || 10000
+      status.up = false
+      status.err = `Timeout after ${status.ping}ms`
+    } else {
       status.up = false
       status.err = `${e.name}: ${e.message}`
-    }
-  } else {
-    // HTTP endpoint monitor
-    try {
-      const headers = new Headers(monitor.headers as any)
-      if (!headers.has('user-agent')) {
-        headers.set('user-agent', 'UptimeFlare/1.0 (+https://github.com/lyc8503/UptimeFlare)')
-      }
-
-      const response = await fetchTimeout(monitor.target, monitor.timeout || 10000, {
-        method: monitor.method,
-        headers: headers,
-        body: monitor.body,
-        cf: {
-          cacheTtlByStatus: {
-            '100-599': -1, // Don't cache any status code, from https://developers.cloudflare.com/workers/runtime-apis/request/#requestinitcfproperties
-          },
-        },
-      })
-
-      console.log(`${monitor.name} responded with ${response.status}`)
-      status.ping = Date.now() - startTime
-
-      const err = await checkHttpResponse(monitor, response.status, response.text.bind(response))
-      try {
-        await response.body?.cancel()
-      } catch (_e) {} // Always try to cancel body, see issue #166
-
-      if (err !== null) {
-        console.log(`${monitor.name} didn't pass response check: ${err}`)
-      }
-      status.up = err === null
-      status.err = err ?? ''
-    } catch (e: any) {
-      console.log(`${monitor.name} errored with ${e.name}: ${e.message}`)
-      if (e.name === 'AbortError') {
-        status.ping = monitor.timeout || 10000
-        status.up = false
-        status.err = `Timeout after ${status.ping}ms`
-      } else {
-        status.up = false
-        status.err = `${e.name}: ${e.message}`
-      }
     }
   }
 

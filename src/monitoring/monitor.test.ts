@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { MonitorTarget } from '../../types/config'
-import { checkHttpResponse, getStatus } from './monitor'
+import { checkHttpResponse, getStatus, getTcpStatus } from './monitor'
 
 const monitor: MonitorTarget = {
   id: 'api',
@@ -54,5 +54,68 @@ describe('HTTP monitor response checks', () => {
     } finally {
       globalThis.fetch = originalFetch
     }
+  })
+})
+
+describe('TCP socket cleanup', () => {
+  const tcpMonitor: MonitorTarget = {
+    id: 'tcp',
+    name: 'TCP',
+    method: 'TCP_PING',
+    target: 'example.com:443',
+    timeout: 1,
+  }
+
+  test('closes the socket after a successful connection', async () => {
+    let closes = 0
+    const result = await getTcpStatus(tcpMonitor, () => ({
+      opened: Promise.resolve({}),
+      close: async () => {
+        closes++
+      },
+    }))
+
+    expect(result.up).toBe(true)
+    expect(closes).toBe(1)
+  })
+
+  test('closes the socket after the connection rejects', async () => {
+    let closes = 0
+    const result = await getTcpStatus(tcpMonitor, () => ({
+      opened: Promise.reject(new Error('connection refused')),
+      close: async () => {
+        closes++
+      },
+    }))
+
+    expect(result.up).toBe(false)
+    expect(result.err).toContain('connection refused')
+    expect(closes).toBe(1)
+  })
+
+  test('closes the socket after a timeout', async () => {
+    let closes = 0
+    const result = await getTcpStatus(tcpMonitor, () => ({
+      opened: new Promise(() => {}),
+      close: async () => {
+        closes++
+      },
+    }))
+
+    expect(result.up).toBe(false)
+    expect(result.ping).toBe(1)
+    expect(closes).toBe(1)
+  })
+
+  test('keeps the check result when closing the socket rejects', async () => {
+    const result = await getTcpStatus(tcpMonitor, () => ({
+      opened: Promise.resolve({}),
+      close: async () => {
+        throw new Error('close failed')
+      },
+    }))
+
+    expect(result.up).toBe(true)
+    expect(result.err).toBe('')
   })
 })

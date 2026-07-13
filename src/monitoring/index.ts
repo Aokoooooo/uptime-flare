@@ -1,8 +1,8 @@
 import { DurableObject } from 'cloudflare:workers'
-import pLimit from 'p-limit'
 import type { MonitorTarget } from '../../types/config'
 import { workerConfig } from '../../uptime.config'
 import { listEnabledMonitors } from '../lib/monitor-repository'
+import { runCheckQueue } from './check-queue'
 import { doMonitor, getStatus } from './monitor'
 import { CompactedMonitorStateWrapper, getFromStore, setToStore } from './store'
 import { formatAndNotify, getWorkerLocation } from './util'
@@ -51,11 +51,21 @@ async function runMonitorChecks(
   env: Env
 ): Promise<Record<string, CheckResult>> {
   // Max concurrent connection is 6 limited by Cloudflare Workers, we use 5 here to be safe.
-  const limit = pLimit(5)
-  const checkQueue: Promise<CheckResult>[] = monitors.map((monitor) =>
-    limit(() => doMonitor(monitor, workerLocation, env))
+  const results = await runCheckQueue(
+    monitors,
+    (monitor) => doMonitor(monitor, workerLocation, env),
+    (result) => result.status.up,
+    (monitor, error): CheckResult => ({
+      id: monitor.id,
+      location: workerLocation,
+      status: {
+        ping: 0,
+        up: false,
+        err: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
+      },
+    })
   )
-  return Object.fromEntries((await Promise.all(checkQueue)).map((result) => [result.id, result]))
+  return Object.fromEntries(results.map((result) => [result.id, result]))
 }
 
 async function applyCheckResults(
